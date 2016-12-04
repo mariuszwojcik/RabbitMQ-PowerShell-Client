@@ -7,3 +7,4 @@ Export-ModuleMember -Alias *
 Export-ModuleMember -Function New-RabbitMQConnection
 Export-ModuleMember -Function New-RabbitMQModel
 Export-ModuleMember -Function Read-RabbitMQMessage
+Export-ModuleMember -Function Remove-RabbitMQMessage

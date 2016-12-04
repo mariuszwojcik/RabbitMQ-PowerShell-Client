@@ -6,7 +6,7 @@
         <View>
 	        <Name>RabbitMQ basic Message</Name>
 	        <ViewSelectedBy>
-	            <TypeName>Message</TypeName>
+	            <TypeName>RabbitMQ.Client.BasicGetResult</TypeName>
 	        </ViewSelectedBy>
 	        <ListControl>
 	            <ListEntries>
@@ -15,22 +15,6 @@
 							<ListItem><PropertyName>Exchange</PropertyName></ListItem>
 							<ListItem><PropertyName>DeliveryTag</PropertyName></ListItem>
 							<ListItem><PropertyName>Redelivered</PropertyName></ListItem>
-							<ListItem><PropertyName>Message</PropertyName></ListItem>
-						</ListItems>
-					</ListEntry>
-	            </ListEntries>
-	        </ListControl>
-	    </View>
-
-        <View>
-	        <Name>RabbitMQ Message body.</Name>
-	        <ViewSelectedBy>
-	            <TypeName>MessageBody</TypeName>
-	        </ViewSelectedBy>
-	        <ListControl>
-	            <ListEntries>
-					<ListEntry>
-						<ListItems>
 							<ListItem><PropertyName>Message</PropertyName></ListItem>
 						</ListItems>
 					</ListEntry>

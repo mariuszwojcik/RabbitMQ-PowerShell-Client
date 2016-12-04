@@ -1,16 +1,18 @@
 cls
 Import-Module 'C:\Code\RabbitMQ-PowerShell-Client' -Force
 
-Read-RabbitMQMessage "EasyNetQ_Default_Error_Queue" -Port 32771 -AsJson -Verbose
+#Read-RabbitMQMessage "EasyNetQ_Default_Error_Queue" -Port 32771 | Remove-RabbitMQMessage
 
-<#
 
-$c1 = New-RabbitMQConnection -Port 32771 -Verbose
-$m1 = New-RabbitMQModel $c1
 
-Read-RabbitMQMessage "EasyNetQ_Default_Error_Queue" $m1 -AsJson -AutoAck
+$connection = New-RabbitMQConnection -Port 32771
+$model = New-RabbitMQModel $connection
 
-$m1.Dispose()
-$c1.Dispose()
+$i = Read-RabbitMQMessage "EasyNetQ_Default_Error_Queue" $model -Verbose -Count 2 | select Message
 
-#>
+
+$i | measure
+
+$model.Dispose()
+$connection.Dispose()
+

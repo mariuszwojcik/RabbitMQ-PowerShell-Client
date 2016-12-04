@@ -20,12 +20,7 @@
 
    Read 1 messages with auto-acknowledgement from queue named Test.
    Auto-acknowledgment removes automatically message from the queue.
-   
 
-.EXAMPLE
-   Read-RabbitMQMessage Test -AsJson
-
-   Read 1 messages from queue named Test and returns message's body decoded from JSON.
 #>
 function Read-RabbitMQMessage
 {
@@ -51,8 +46,10 @@ function Read-RabbitMQMessage
         [Parameter(ParameterSetName="explicit", Mandatory=$false, ValueFromPipelineByPropertyName=$true, Position=3)]
         [PSCredential] $Credentials,
 
-        [Switch]$AutoAck,
-        [Switch]$AsJson
+        [Parameter()]
+        [int] $Count = 1,
+
+        [Switch]$AutoAck
     )
     Begin
     {
@@ -62,23 +59,31 @@ function Read-RabbitMQMessage
     }
     End
     {
-        function getMessage()
+        function getMessages()
         {
-            $basicMessage = $Model.BasicGet($QueueName, $AutoAck)
-            $message = [System.Text.Encoding]::Default.GetString($basicMessage.Body)
-            $basicMessage | Add-Member Message $message
+            [System.Collections.ArrayList]$items = @()
+            for ($i = 1; $i -le $Count; $i++)
+            {
+                $basicMessage = $Model.BasicGet($QueueName, $AutoAck)
 
-            if ($AutoAck) { Write-Verbose "Auto-Acknowledged message with tag $($basicMessage.DeliveryTag)." }
+                if (-not $basicMessage) { break }
 
-            return $basicMessage
+                $message = [System.Text.Encoding]::Default.GetString($basicMessage.Body)
+                $basicMessage | Add-Member Message $message
+
+                if ($AutoAck) { Write-Verbose "Auto-Acknowledged message with tag $($basicMessage.DeliveryTag)." }
+
+                $items.Add($basicMessage) | Out-Null
+            }
+            return $items
         }
 
-        function getMessageFromPrivateModel()
+        function getMessagesFromPrivateModel()
         {
             try {
                 $Connection = New-RabbitMQConnection $HostName $Port $Credentials
                 $Model = New-RabbitMQModel $Connection
-                return getMessage
+                return getMessages
             }
             finally {
                 Write-Verbose "Disposing RabbitMQ connection."
@@ -88,21 +93,13 @@ function Read-RabbitMQMessage
         }
 
 
-        $basicMessage = $null;
+        $messages = $null;
         switch ($PSCmdlet.ParameterSetName)
         {
-            "implicit" { $basicMessage = getMessage }
-            "explicit" { $basicMessage = getMessageFromPrivateModel }
+            "implicit" { $messages = getMessages }
+            "explicit" { $messages = getMessagesFromPrivateModel }
         }
 
-        
-
-        if ($AsJson) {
-            $json = $basicMessage.Message | ConvertFrom-Json
-            $json
-
-        } else {
-            sendItemsToOutput $basicMessage "Message"
-        }
+        $messages
     }
 }
