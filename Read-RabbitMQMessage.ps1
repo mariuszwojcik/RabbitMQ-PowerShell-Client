@@ -34,21 +34,27 @@ function Read-RabbitMQMessage
         [RabbitMQ.Client.IModel] $Model,
 
 
-
         # RabbitMQ server host
         [Parameter(ParameterSetName="explicit", Mandatory=$false, ValueFromPipelineByPropertyName=$true, Position=1)]
         [string] $HostName = "localhost",
 
         # RabbitMQ server port
         [Parameter(ParameterSetName="explicit", Mandatory=$false, ValueFromPipelineByPropertyName=$true, Position=2)]
+        [ValidateRange(0, 65535)]
         [int] $Port = 5672,
 
         [Parameter(ParameterSetName="explicit", Mandatory=$false, ValueFromPipelineByPropertyName=$true, Position=3)]
         [PSCredential] $Credentials,
 
         [Parameter()]
+        [ValidateRange(1, [Int32]::MaxValue)]
         [int] $Count = 1,
 
+        [Parameter()]
+        [ValidateRange(1, 65535)]
+        [uint32] $PrefetchCount = 50,
+
+        [Parameter()]
         [Switch]$AutoAck
     )
     Begin
@@ -61,10 +67,14 @@ function Read-RabbitMQMessage
     {
         function getMessages()
         {
+            $model.BasicQos([uint32]0, $PrefetchCount, $false)
+
             [System.Collections.ArrayList]$items = @()
             for ($i = 1; $i -le $Count; $i++)
             {
                 $basicMessage = $Model.BasicGet($QueueName, $AutoAck)
+
+                $basicMessage.MessageCount
 
                 if (-not $basicMessage) { break }
 
@@ -74,7 +84,12 @@ function Read-RabbitMQMessage
                 if ($AutoAck) { Write-Verbose "Auto-Acknowledged message with tag $($basicMessage.DeliveryTag)." }
 
                 $items.Add($basicMessage) | Out-Null
+
+                $percentCompleted = $i / $Count * 100.0
+                Write-Progress "Reading $QueueName messages ($i out of $Count [$percentCompleted%])" -PercentComplete $percentCompleted
             }
+
+            Write-Progress "Read $i messages from $QueueName queue" -Completed
             return $items
         }
 
