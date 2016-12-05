@@ -8,18 +8,13 @@
 .EXAMPLE
    Measure-RabbitMQQueue Test
 
-   Read 1 messages from queue named Test. 
+   Gets number of messages and number of consumers for Test queue. 
 
 .EXAMPLE
-   Read-RabbitMQMessage Test RabbitServer 32771
+   Measure-RabbitMQQueue "EasyNetQ_Default_Error_Queue" RabbitMQServer -Credentials $(Get-Credential)
 
-   Read 1 messages from queue named Test from host called RabbitServer using port 32771. 
+   Gets number of messages and number of consumers for EasyNetQ_Default_Error_Queue queue on server RabbitMQServer. 
 
-.EXAMPLE
-   Read-RabbitMQMessage Test -AutoAck
-
-   Read 1 messages with auto-acknowledgement from queue named Test.
-   Auto-acknowledgment removes automatically message from the queue.
 
 #>
 function Measure-RabbitMQQueue
@@ -51,7 +46,6 @@ function Measure-RabbitMQQueue
     )
     Begin
     {
-Write-Verbose $PSCmdlet.ParameterSetName
     }
     Process
     {        
