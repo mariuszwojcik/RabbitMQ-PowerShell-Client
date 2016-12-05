@@ -78,7 +78,8 @@ NestedModules = @(
 
     'New-RabbitMQConnection.ps1'
     'New-RabbitMQModel.ps1'
-    'Read-RabbitMQMessage.ps1',
+    'Measure-RabbitMQQueue.ps1'
+    'Read-RabbitMQMessage.ps1'
     'Remove-RabbitMQMessage.ps1'
 )
 

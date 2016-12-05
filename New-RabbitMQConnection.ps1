@@ -26,7 +26,11 @@ function New-RabbitMQConnection
 
         # RabbitMQ credentials
         [Parameter(Mandatory=$false, ValueFromPipelineByPropertyName=$true, Position=2)]
-        [PSCredential] $Credential
+        [PSCredential] $Credential,
+
+        # RabbitMQ Virtual Host
+        [Parameter(Mandatory=$false, ValueFromPipelineByPropertyName=$true, Position=3)]
+        [string] $VirtualHost = "/"
     )
     Begin
     {
@@ -60,7 +64,10 @@ function New-RabbitMQConnection
         $portProp = [RabbitMQ.Client.ConnectionFactory].GetProperty("Password")
         $portProp.SetValue($connectionFactory, $Password)
 
-        Write-Verbose "Creating RabbitMQ connection: $UserName@$HostName : $Port"
+        $virtualHostProp = [RabbitMQ.Client.ConnectionFactory].GetProperty("VirtualHost")
+        $virtualHostProp.SetValue($connectionFactory, $VirtualHost)
+
+        Write-Verbose "Creating RabbitMQ connection: $UserName@$HostName : $Port virtualHost: $VirtualHost"
         
         $createConnectionMethod = [RabbitMQ.Client.ConnectionFactory].GetMethod("CreateConnection", [Type[]]@())
 

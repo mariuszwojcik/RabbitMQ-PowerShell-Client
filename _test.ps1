@@ -7,20 +7,21 @@ if (-not $credentials) {
     $global:credentials = Get-Credential 'admin'
 }
 
-$connection = New-RabbitMQConnection -HostName mqc01 -Credential $global:credentials
+$connection = New-RabbitMQConnection -HostName mqc01 -Credential $global:credentials -Verbose
 $model = New-RabbitMQModel $connection
 
+$messages = Read-RabbitMQMessage "EasyNetQ_Default_Error_Queue" $model -Verbose -Count 10000 -PrefetchCount 1000
 
-
-$messages = Read-RabbitMQMessage "EasyNetQ_Default_Error_Queue" $model -Verbose -Count 1 -PrefetchCount 1000
 
 [System.Collections.ArrayList]$msgs = @()
-foreach($rm in $messages | select Message)
+foreach($rm in $messages)
 {
-    $m = $rm.Message | ConvertFrom-Json
+    if ($rm)
+    {
+        $m = $rm.Message | ConvertFrom-Json
 
-    $msgs.Add($rm) | Out-Null
-
+        $msgs.Add($rm) | Out-Null
+    }
 <#    
     if ($m.Exchange -eq "TravelRepublic.Bookings.Contracts.BookingEvent:TravelRepublic.Bookings.Contracts")
     {
@@ -37,9 +38,7 @@ foreach($rm in $messages | select Message)
 $msgs | measure
 #$msgs | Out-GridView
 
-$msgs | select Exchange | sort -Unique 
-
-$messages[0] | fl
+#$messages[0] | select *
 
 $model.Dispose()
 $connection.Dispose()

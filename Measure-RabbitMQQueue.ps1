@@ -3,10 +3,10 @@
    Reads message from RabbitMQ queue.
 
 .DESCRIPTION
-   Read-RabbitMQMessage
+   Measure-RabbitMQQueue
 
 .EXAMPLE
-   Read-RabbitMQMessage Test
+   Measure-RabbitMQQueue Test
 
    Read 1 messages from queue named Test. 
 
@@ -22,7 +22,7 @@
    Auto-acknowledgment removes automatically message from the queue.
 
 #>
-function Read-RabbitMQMessage
+function Measure-RabbitMQQueue
 {
     [CmdletBinding()]
     Param
@@ -47,63 +47,39 @@ function Read-RabbitMQMessage
         [PSCredential] $Credentials,
 
         [Parameter(ParameterSetName="explicit", Mandatory=$false, ValueFromPipelineByPropertyName=$true)]
-        [string] $VirtualHost = "/",
-
-        [Parameter()]
-        [ValidateRange(1, [Int32]::MaxValue)]
-        [int] $Count = 1,
-
-        [Parameter()]
-        [ValidateRange(1, 65535)]
-        [uint32] $PrefetchCount = 50,
-
-        [Parameter()]
-        [Switch]$AutoAck
+        [string] $VirtualHost = "/"
     )
     Begin
     {
+Write-Verbose $PSCmdlet.ParameterSetName
     }
     Process
     {        
     }
     End
     {
-        function getMessages()
+        function getQueueSize()
         {
-            $model.BasicQos([uint32]0, $PrefetchCount, $false)
-
-            $queueInfo = Measure-RabbitMQQueue $QueueName -Model $Model
-            if (-not $queueInfo) { return }
-            if ($Count -gt $queueInfo.MessageCount) { $Count = $queueInfo.MessageCount }
-
-            [System.Collections.ArrayList]$items = @()
-            for ($i = 1; $i -le $Count; $i++)
-            {
-                $basicMessage = $Model.BasicGet($QueueName, $AutoAck)
-
-                if (-not $basicMessage) { break }
-
-                $message = [System.Text.Encoding]::Default.GetString($basicMessage.Body)
-                $basicMessage | Add-Member Message $message
-
-                if ($AutoAck) { Write-Verbose "Auto-Acknowledged message with tag $($basicMessage.DeliveryTag)." }
-
-                $items.Add($basicMessage) | Out-Null
-
-                $percentCompleted = $i / $Count * 100.0
-                Write-Progress "Reading $QueueName messages ($i out of $Count [$percentCompleted%])" -PercentComplete $percentCompleted
+            try {
+                return $model.QueueDeclarePassive($QueueName)    
             }
-
-            Write-Progress "Read $i messages from $QueueName queue" -Completed
-            return $items
+            catch [RabbitMQ.Client.Exceptions.OperationInterruptedException] {
+                if ($_.Exception.Message -match "text=""NOT_FOUND")
+                {
+                    Write-Warning "Queue $QueueName doesn't exist. Virtual host: $VirtualHost"
+                } else {
+                    throw
+                }
+            }
+            
         }
 
-        function getMessagesFromPrivateModel()
+        function getQueueSizeFromPrivateModel()
         {
             try {
                 $Connection = New-RabbitMQConnection $HostName $Port $Credentials $VirtualHost
                 $Model = New-RabbitMQModel $Connection
-                return getMessages
+                return getQueueSize
             }
             finally {
                 Write-Verbose "Disposing RabbitMQ connection."
@@ -113,13 +89,13 @@ function Read-RabbitMQMessage
         }
 
 
-        $messages = $null;
+        $queue = $null;
         switch ($PSCmdlet.ParameterSetName)
         {
-            "implicit" { $messages = getMessages }
-            "explicit" { $messages = getMessagesFromPrivateModel }
+            "implicit" { $queue = getQueueSize }
+            "explicit" { $queue = getQueueSizeFromPrivateModel }
         }
 
-        $messages
+        $queue
     }
 }
